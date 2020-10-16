@@ -1,0 +1,7 @@
+//
+// Created by intellij-pest on 2020-10-06
+// grammar
+// Author: jojop
+//
+
+grammar = { "Hello World!" }
