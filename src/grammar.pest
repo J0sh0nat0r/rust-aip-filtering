@@ -1,7 +1,56 @@
-//
-// Created by intellij-pest on 2020-10-06
-// grammar
-// Author: jojop
-//
+filter = _{ SOI ~ expression? ~ EOI }
 
-grammar = { "Hello World!" }
+expression = { sequence ~ ("AND" ~ sequence)* }
+
+sequence = { factor+ }
+
+factor = { term ~ ("OR" ~ term)* }
+
+term = { negation? ~ simple }
+
+negation = { "NOT" | "-" }
+
+simple = _{ composite | restriction }
+
+restriction = { comparable ~ (comparator ~ arg)? }
+
+comparable = _{ function | member }
+
+member = { value ~ ("." ~ field)* }
+
+function = { function_name ~ "(" ~ arg_list? ~ ")" }
+function_name = { name ~ ("." ~ name)* }
+
+comparator = { lt_eq | lt | gt_eq | gt | ne | eq | has }
+    eq    = { "=" }
+    gt    = { ">" }
+    gt_eq = { ">=" }
+    has   = { ":" }
+    lt    = { "<" }
+    lt_eq = { "<=" }
+    ne    = { "!=" }
+
+composite = _{ "(" ~ expression ~ ")" }
+
+value = { string | text }
+
+field = { keyword | value }
+
+name = { keyword | text }
+
+arg_list = { arg ~ ("," ~ arg)* }
+
+arg = _{ composite | comparable }
+
+keyword = { "NOT" | "AND" | "OR" }
+
+text = ${ !keyword ~ text_inner }
+text_inner = @{ text_char+ }
+// text_char = { (ASCII_ALPHANUMERIC | "_" | "*") ~ (!("." | ":") ~ ANY*) }
+text_char = { !("." | "," | ":" | "(" | ")" | WHITESPACE) ~ ANY }
+
+string = ${ PUSH("\"" | "'") ~ string_char* ~ POP }
+string_inner = @{ string_char* }
+string_char = { !(PEEK | "\\") ~ ANY | "\\" ~ PEEK }
+
+WHITESPACE = _{ " " | "\t" }
