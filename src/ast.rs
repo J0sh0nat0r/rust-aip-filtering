@@ -43,7 +43,9 @@ impl<'a> Value<'a> {
 
         let inner_pair = pair.into_inner().next().unwrap();
 
-        let str = match inner_pair.as_rule() {
+        let rule = inner_pair.as_rule();
+
+        let str = match rule {
             Rule::string => inner_pair.into_inner().as_str(),
 
             Rule::text => inner_pair.as_str(),
@@ -73,7 +75,13 @@ impl<'a> Value<'a> {
             return Ok(Value::Timestamp(value));
         }
 
-        Ok(Value::Text(str))
+        Ok(match rule {
+            Rule::string => Value::String(str),
+
+            Rule::text => Value::Text(str),
+
+            _ => unreachable!()
+        })
     }
 
     pub fn string_repr(&self) -> String {
