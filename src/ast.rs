@@ -1,5 +1,7 @@
 use std::fmt::{self, Display, Formatter};
+use std::time::Duration;
 
+use chrono::{DateTime, FixedOffset};
 use itertools::Itertools;
 use pest::error::Error;
 use pest::iterators::{Pair, Pairs};
@@ -27,12 +29,12 @@ pub type Filter<'a> = Option<Expression<'a>>;
 #[derive(Debug)]
 pub enum Value<'a> {
     Bool(bool),
-    // Duration(Duration),
+    Duration(Duration),
     Float(f64),
     Int(i64),
     String(&'a str),
     Text(&'a str),
-    // Timestamp(NaiveDateTime)
+    Timestamp(DateTime<FixedOffset>),
 }
 
 impl<'a> Value<'a> {
@@ -41,36 +43,48 @@ impl<'a> Value<'a> {
 
         let inner_pair = pair.into_inner().next().unwrap();
 
-        match inner_pair.as_rule() {
-            Rule::string => Ok(Self::String(inner_pair.into_inner().as_str())),
-            Rule::text => {
-                let str = inner_pair.as_str();
+        let str = match inner_pair.as_rule() {
+            Rule::string => inner_pair.into_inner().as_str(),
 
-                if let Ok(value) = str.parse() {
-                    return Ok(Value::Bool(value));
-                }
+            Rule::text => inner_pair.as_str(),
 
-                if let Ok(value) = str.parse() {
-                    return Ok(Value::Int(value));
-                }
+            _ => return Err(()),
+        };
 
-                if let Ok(value) = str.parse() {
-                    return Ok(Value::Float(value));
-                }
-
-                Ok(Value::Text(str))
-            }
-            _ => Err(()),
+        if let Ok(value) = str.parse() {
+            return Ok(Value::Bool(value));
         }
+
+        if str.ends_with("s") {
+            if let Ok(secs) = str[..str.len() - 1].parse() {
+                return Ok(Value::Duration(Duration::from_secs_f64(secs)))
+            }
+        }
+
+        if let Ok(value) = str.parse() {
+            return Ok(Value::Int(value));
+        }
+
+        if let Ok(value) = str.parse() {
+            return Ok(Value::Float(value));
+        }
+
+        if let Ok(value) = DateTime::parse_from_rfc3339(str) {
+            return Ok(Value::Timestamp(value));
+        }
+
+        Ok(Value::Text(str))
     }
 
     pub fn string_repr(&self) -> String {
         match self {
             Self::Bool(value) => value.to_string(),
+            Self::Duration(value) => format!("{}s", value.as_secs_f64()),
             Self::Float(value) => value.to_string(),
             Self::Int(value) => value.to_string(),
             Self::String(value) => value.to_string(),
             Self::Text(value) => value.to_string(),
+            Self::Timestamp(value) => value.to_rfc3339(),
         }
     }
 }
@@ -79,10 +93,12 @@ impl Display for Value<'_> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             Self::Bool(value) => write!(f, "{}", value),
+            Self::Duration(value) => write!(f, "{}s", value.as_secs_f64()),
             Self::Float(value) => write!(f, "{}", value),
             Self::Int(value) => write!(f, "{}", value),
             Self::String(value) => write!(f, "\"{}\"", value),
             Self::Text(value) => write!(f, "{}", value),
+            Self::Timestamp(value) => write!(f, "\"{}\"", value.to_rfc3339()),
         }
     }
 }
