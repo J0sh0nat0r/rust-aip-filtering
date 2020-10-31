@@ -43,45 +43,47 @@ impl<'a> Value<'a> {
 
         let inner_pair = pair.into_inner().next().unwrap();
 
-        let rule = inner_pair.as_rule();
+        match inner_pair.as_rule() {
+            Rule::string => {
+                let str = inner_pair.into_inner().as_str();
 
-        let str = match rule {
-            Rule::string => inner_pair.into_inner().as_str(),
+                if let Ok(value) = DateTime::parse_from_rfc3339(str) {
+                    return Ok(Value::Timestamp(value));
+                }
 
-            Rule::text => inner_pair.as_str(),
-
-            _ => return Err(()),
-        };
-
-        if let Ok(value) = str.parse() {
-            return Ok(Value::Bool(value));
-        }
-
-        if str.ends_with("s") {
-            if let Ok(secs) = str[..str.len() - 1].parse() {
-                return Ok(Value::Duration(Duration::from_secs_f64(secs)))
+                return Ok(Value::String(str))
             }
-        }
 
-        if let Ok(value) = str.parse() {
-            return Ok(Value::Int(value));
-        }
+            Rule::text => {
+                let str = inner_pair.as_str();
 
-        if let Ok(value) = str.parse() {
-            return Ok(Value::Float(value));
-        }
+                if let Ok(value) = str.parse() {
+                    return Ok(Value::Bool(value));
+                }
 
-        if let Ok(value) = DateTime::parse_from_rfc3339(str) {
-            return Ok(Value::Timestamp(value));
-        }
+                if str.ends_with("s") {
+                    if let Ok(secs) = str[..str.len() - 1].parse() {
+                        return Ok(Value::Duration(Duration::from_secs_f64(secs)))
+                    }
+                }
 
-        Ok(match rule {
-            Rule::string => Value::String(str),
+                if let Ok(value) = str.parse() {
+                    return Ok(Value::Int(value));
+                }
 
-            Rule::text => Value::Text(str),
+                if let Ok(value) = str.parse() {
+                    return Ok(Value::Float(value));
+                }
+
+                if let Ok(value) = DateTime::parse_from_rfc3339(str) {
+                    return Ok(Value::Timestamp(value));
+                }
+
+                Ok(Value::Text(str))
+            }
 
             _ => unreachable!()
-        })
+        }
     }
 
     pub fn string_repr(&self) -> String {
