@@ -24,7 +24,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v2
-      - name: Login
-        run: cargo login ${{ secrets.CARGO_TOKEN }}
-      - name: cargo-auto-publish
-        uses: seunlanlege/cargo-auto-publish@2
+      - name: publish crates
+        uses: katyo/publish-crates@v1
+        with:
+          registry-token: ${{ secrets.CARGO_TOKEN }}
