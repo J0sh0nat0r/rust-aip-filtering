@@ -3,6 +3,8 @@ name = "aip-filtering"
 version = "0.1.0"
 authors = ["J0sh0nat0r <jojo.parillon@gmail.com>"]
 edition = "2018"
+description = "Simple implementation of AIP-160 filtering"
+license = "MIT"
 
 [dependencies]
 chrono = "0.4"
