@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
+      - uses: actions/checkout@v2
       - name: Login
         run: cargo login ${{ secrets.CARGO_TOKEN }}
       - name: cargo-auto-publish
